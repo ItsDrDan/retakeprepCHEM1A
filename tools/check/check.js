@@ -2,7 +2,7 @@
 const fs=require('fs'),path=require('path');const {JSDOM,VirtualConsole}=require('jsdom');
 const N=+process.argv[2]||200;
 const NAMES=['G','EXAMS','renderQ','wireInteractive','gradeQ','gradePart','config','cfgStr','nobleStr','countAtoms','molarMass','BANKQ','bankSec','bankToQ','bankPool','state','RDX','LIM','NEUT','TITR','CONS','HFR','HF_','HESS','BER','BE_','LINES','RESQ','VSP','MOS','moFill','FICT','STRUCTS','IES','TYPE_NAMES','secFor','buildMock','poolFor'];
-let html=fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8').replace(/<script src="https?:[^"]*"[^>]*><\/script>/g,'');
+let html=fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8').replace(/<script src="https?:[^"]*"[^>]*><\/script>/g,'').replace(/<script src="(book-data|examtools)\.js"><\/script>/g,'');
 html=html.replace(/<\/script>(?![\s\S]*<\/script>)/,`;window.__X={${NAMES.map(n=>`${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}}</script>`);
 const errs=[],vc=new VirtualConsole();vc.on('jsdomError',e=>errs.push(String(e.message||e)));
 const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://itsdrdan.github.io/retakeprepCHEM1A/',virtualConsole:vc,pretendToBeVisual:true,beforeParse(w){w.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.fetch=()=>Promise.reject('x');w.confirm=()=>true}});
