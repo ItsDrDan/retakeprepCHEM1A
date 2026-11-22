@@ -1,0 +1,39 @@
+// Regression check for the CHEM 1A retake game. Contains no exam content.
+const fs=require('fs'),path=require('path');const {JSDOM,VirtualConsole}=require('jsdom');
+const N=+process.argv[2]||200;
+const NAMES=['G','EXAMS','renderQ','wireInteractive','gradeQ','gradePart','config','cfgStr','nobleStr','countAtoms','molarMass','BANKQ','bankSec','bankToQ','bankPool','state','RDX','LIM','NEUT','TITR','CONS','HFR','HF_','HESS','BER','BE_','LINES','RESQ','VSP','MOS','moFill','FICT','STRUCTS','IES','TYPE_NAMES','secFor','buildMock','poolFor'];
+let html=fs.readFileSync(path.join(__dirname,'../../index.html'),'utf8').replace(/<script src="https?:[^"]*"[^>]*><\/script>/g,'');
+html=html.replace(/<\/script>(?![\s\S]*<\/script>)/,`;window.__X={${NAMES.map(n=>`${n}:typeof ${n}!=='undefined'?${n}:undefined`).join(',')}}</script>`);
+const errs=[],vc=new VirtualConsole();vc.on('jsdomError',e=>errs.push(String(e.message||e)));
+const dom=new JSDOM(html,{runScripts:'dangerously',url:'https://itsdrdan.github.io/retakeprepCHEM1A/',virtualConsole:vc,pretendToBeVisual:true,beforeParse(w){w.matchMedia=()=>({matches:false,addEventListener(){},removeEventListener(){}});w.scrollTo=()=>{};w.HTMLElement.prototype.scrollIntoView=()=>{};w.fetch=()=>Promise.reject('x');w.confirm=()=>true}});
+const X=dom.window.__X,doc=dom.window.document;if(!X||errs.length){console.log('LOAD FAIL',errs.slice(0,3));process.exit(1)}
+const fails=[];const bad=(t,m)=>{if(fails.length<60)fails.push(t+': '+m);else fails.n=(fails.n||60)+1};
+const host=doc.createElement('div');doc.body.appendChild(host);let uid=0;
+function fill(p){const el=doc.getElementById(p.id);switch(p.kind){case'num':el.value=p.sf?Number(p.ans).toExponential(p.sf-1):String(p.ans);break;case'meas':el.value=p.ans.toFixed(p.dp)+' '+p.unit;break;case'text':case'formula':el.value=p.kind==='text'?p.ans[0]:p.ans;break;case'cfg':el.value=p.full?X.cfgStr(X.config(p.z)):X.nobleStr(p.z);break;case'sel':el.value=p.ans;break;case'mc':el.querySelectorAll('input')[p.ans].checked=true;break;case'chk':el.querySelectorAll('input').forEach(i=>{i.checked=p.ans.includes(p.opts[+i.value])});break;case'obx':p.levels.forEach(l=>{const b=[...el.querySelectorAll('.obox')].filter(x=>x.dataset.sub===l.name),full=Math.max(0,l.e-l.n),single=l.e-2*full;b.forEach((x,i)=>x.textContent=i<full?'↑↓':i<full+single?'↑':'')});break;case'orbital':X.config(p.z).forEach(([o,c])=>{const b=[...el.querySelectorAll(`[data-sub="${o}"]`)],full=Math.max(0,c-b.length),single=c-2*full;b.forEach((x,i)=>x.textContent=i<full?'↑↓':i<full+single?'↑':'')});break;case'dots':{const d=[...el.querySelectorAll('.d')],o=[0,2,4,6,1,3,5,7];for(let k=0;k<p.val;k++)d[o[k]].classList.add('on');break}case'coef':el.querySelectorAll('input').forEach((x,i)=>x.value=p.r[2][i]);break;case'wordeq':{const a=p.r[0].concat(p.r[1]);el.querySelectorAll('input.co').forEach((x,i)=>x.value=p.r[2][i]);el.querySelectorAll('input.fo').forEach((x,i)=>x.value=a[i]);break}case'nuc':doc.getElementById(p.id+'-A').value=p.A;doc.getElementById(p.id+'-Z').value=p.Z;doc.getElementById(p.id+'-S').value=p.sym;doc.getElementById(p.id+'-C').value=p.ch===0?'':(Math.abs(p.ch)>1?Math.abs(p.ch):'')+(p.ch>0?'+':'-');break}}
+const NEW=t=>/^x[123]/.test(t);
+for(const t of Object.keys(X.G))for(let i=0;i<N;i++){let q;try{q=X.G[t]();q.type=t}catch(e){bad(t,'threw '+e.message);break}
+ host.innerHTML=X.renderQ(q,1,'c'+(++uid));X.wireInteractive(q);const txt=host.textContent+q.sol;if(/\bNaN\b|undefined|Infinity|\[object|\de\+\d/.test(txt))bad(t,'broken text: '+(txt.match(/.{30}(\bNaN\b|undefined|Infinity|\[object|\de\+\d).{10}/)||[''])[0]);
+ if(NEW(t)&&(!q.hint||!q.why||!q.sol.includes('class="ans"')))bad(t,'missing hint/why/answer');
+ for(const p of q.allParts){if(p.kind==='sel'){if(!p.opts.includes(p.ans))bad(t,'key not in choices '+p.ans);if(new Set(p.opts).size!==p.opts.length)bad(t,'duplicate choices');if(NEW(t)&&p.opts.some(o=>o!==p.ans&&!(p.why&&p.why[o])))bad(t,'choice without a why: '+p.label)}if(p.kind==='num'&&!isFinite(p.ans))bad(t,'bad answer')}
+ q.allParts.forEach(fill);const r=X.gradeQ(q,{});if(r.earned<q.pts)bad(t,`key scored ${r.earned}/${q.pts} ${r.msgs.join(' | ').slice(0,120)} :: ${q.prompt.replace(/<[^>]+>/g,'').slice(0,70)}`)}
+// chemistry, computed separately from the generators
+const atoms=f=>{const o={};const c=X.countAtoms(String(f).replace(/\^.*$/,''));for(const k in c)o[k]=c[k];return o};const charge=f=>{const m=String(f).match(/\^(\d*)([+-])$/);return m?(m[2]==='+'?1:-1)*(+m[1]||1):0};
+function bal(n,L,Rr,cL,cR,withCharge){const S={},add=(f,c,s)=>{const a=atoms(f);for(const k in a)S[k]=(S[k]||0)+s*c*a[k];if(withCharge)S.q=(S.q||0)+s*c*charge(f)};L.forEach((f,i)=>add(f,cL[i],1));Rr.forEach((f,i)=>add(f,cR[i],-1));if(Object.values(S).some(v=>Math.abs(v)>1e-9))bad('balance',n+' '+JSON.stringify(S))}
+X.RDX.forEach(r=>{const l=r.l||3;bal(r.t.join(' '),r.t.slice(0,l),r.t.slice(l),r.c.slice(0,l),r.c.slice(l),true)});
+[...X.NEUT,...X.TITR].forEach(n=>bal(n[0]+n[1],[n[0],n[1]],[n[2],'H2O'],n[3].slice(0,2),n[3].slice(2)));
+X.CONS.forEach(c=>bal(c[0].join('+'),c[0],c[2],c[1],c[3]));
+X.LIM.forEach(l=>{const m=l[6].split(' → ').map(x=>x.split(' + ').map(y=>{const p=y.split(' ');return p.length>1?[p[1],+p[0]]:[p[0],1]}));bal(l[6],m[0].map(x=>x[0]),m[1].map(x=>x[0]),m[0].map(x=>x[1]),m[1].map(x=>x[1]))});
+X.HFR.forEach(([a,b])=>{const c=x=>x.replace(/\(.*\)/,'');bal(JSON.stringify(a),a.map(x=>c(x[0])),b.map(x=>c(x[0])),a.map(x=>x[1]),b.map(x=>x[1]))});
+const side=s=>s.split(' + ').map(x=>{let m=x.trim().match(/^([\d½]+)?\s*(.+)$/);const c=m[1]==='½'?.5:m[1]?+m[1]:1;return [m[2].replace(/\(.*?\)$/,''),c]});
+X.HESS.forEach(h=>{const net={},add=(s,k)=>{const [a,b]=s.split(' → ');side(a).forEach(([f,c])=>net[f]=(net[f]||0)+k*c);side(b).forEach(([f,c])=>net[f]=(net[f]||0)-k*c)};h.s.forEach(([e],i)=>add(e,h.k[i]));add(h.t,-1);if(Object.values(net).some(v=>Math.abs(v)>1e-9))bad('hess',h.t+' '+JSON.stringify(net))});
+X.LINES.forEach(([a,b,l])=>{const c=1e9/(1.097e7*(1/a/a-1/b/b));if(Math.abs(c-l)/l>.01)bad('rydberg',`${b}->${a}: ${c}`)});
+X.MOS.forEach(([f,e])=>{const m=X.moFill(e,e<=10);if(m.bond+m.anti!==e)bad('MO',f)});
+const known={'B₂':[1,2],'C₂':[2,0],'N₂':[3,0],'O₂':[2,2],'F₂':[1,0],'N₂⁺':[2.5,1],'O₂⁺':[2.5,1],'O₂²⁻':[1,0],'C₂⁻':[2.5,1],'F₂⁺':[1.5,1]};X.MOS.forEach(([f,e])=>{const m=X.moFill(e,e<=10),b=(m.bond-m.anti)/2;if(b!==known[f][0]||m.unp!==known[f][1])bad('MO',`${f} BO ${b} unpaired ${m.unp}`)});
+// mock exams and bank
+for(const e of [1,2,3]){X.state.exam=e;X.state.mock=null;for(let k=0;k<25;k++){X.buildMock();const M=X.state.mock;const pts=M.qs.reduce((a,q)=>a+q.pts,0);if(pts!==100)bad('mock',`exam ${e} = ${pts}`);M.qs.forEach(q=>{if(!EXAMSsec(e,q.sec))bad('mock','section '+q.sec);});if(k===0){const b=M.qs.reduce((a,q)=>a+X.gradeQ(q,{}).earned,0);if(b!==0)bad('mock','blank scored '+b);X.buildMock();X.state.mock.qs.forEach(q=>q.allParts.forEach(fill));const f=X.state.mock.qs.reduce((a,q)=>a+X.gradeQ(q,{}).earned,0);if(f!==100)bad('mock',`exam ${e} key scored ${f}`)}}}
+function EXAMSsec(e,s){return X.EXAMS[e].sections.some(x=>x[0]===s)}
+let bn=0;for(const b of X.BANKQ){const e=[1,2,3].find(x=>X.bankSec(x,b));if(!e){bad('bank','no section '+b.id);continue}bn++;const q=X.bankToQ(b,e);if(q.parts[0].ans<0)bad('bank','key missing '+b.id);if(q.parts[0].opts.some((o,i)=>i!==q.parts[0].ans&&!q.parts[0].why[i]))bad('bank','missing why '+b.id)}
+for(const e of [1,2,3])for(const [s] of X.EXAMS[e].sections)if(!X.poolFor(e).some(t=>X.secFor(e,t)===s))bad('topics',`exam ${e} ${s} empty`);
+for(const e of [1,2,3])for(const t of X.poolFor(e))if(!X.TYPE_NAMES[t])bad('names',t);
+console.log(`${Object.keys(X.G).length} generators × ${N}, ${bn} bank questions, 3 mock exams`);
+if(fails.length){console.log(fails.join('\n'));if(fails.n)console.log('...more',fails.n);process.exit(1)}console.log('ALL PASS');
