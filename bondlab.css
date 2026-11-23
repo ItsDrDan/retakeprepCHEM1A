@@ -36,3 +36,8 @@
 .bl-fb.info{background:#f0f3fb;color:#3a4563}
 .bl-go{min-height:44px}
 .bl-done{margin-top:8px;padding:10px 12px;border-radius:10px;background:#ecf8f2;color:#17603f}
+/* mock exam drawing cards and solutions */
+.q .sc .lw{max-width:300px}
+.bl-solgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-top:6px}
+.bl-solpic{max-width:220px;text-align:center}
+.bl-solpic svg{display:block;width:100%;height:auto}

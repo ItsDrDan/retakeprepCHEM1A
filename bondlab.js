@@ -105,5 +105,19 @@ wireInteractive=function(q){wi(q);syncCheck(q);q.allParts.filter(p=>p.kind==='bl
  box.addEventListener('pointercancel',()=>{d=null});
  box.addEventListener('click',e=>{if(e.detail!==0&&Date.now()-last<700)return;const g=e.target.closest('.bl-go,.bl-chip');if(g)act(g)});
  box.addEventListener('keydown',e=>{if(p.result)return;const g=e.target.closest&&e.target.closest('[data-ao-side],[data-orbital]');if(g&&(e.key==='Enter'||e.key===' ')){e.preventDefault();g.__kb=true;tapBox(p,g,box);return}if(e.key==='Enter'&&e.target.matches('input')){e.preventDefault();checkStep(p,box)}})})};
-window.BondLab={MOLS,MOS};
+/* ---------- on-screen Lewis drawing in Mock Exam 3 Q14 and Q15 (same points) ---------- */
+const LV={H:1,B:3,C:4,N:5,O:6,F:7,P:5,S:6,Cl:7,Se:6,Br:7,I:7,Xe:8};
+const VD={'SO₂':['S','O O',0,[[2,1],[2,2]]],'NH₄⁺':['N','H H H H',1,[[1,1,1,1]]],'PF₅':['P','F F F F F',0,[[1,1,1,1,1]]],'ClF₃':['Cl','F F F',0,[[1,1,1]]],'XeF₂':['Xe','F F',0,[[1,1]]],'SF₆':['S','F F F F F F',0,[[1,1,1,1,1,1]]],'CO₃²⁻':['C','O O O',-2,[[2,1,1]]],'H₃O⁺':['O','H H H',1,[[1,1,1]]],'SeF₄':['Se','F F F F',0,[[1,1,1,1]]],'BF₃':['B','F F F',0,[[1,1,1]]],'H₂S':['S','H H',0,[[1,1]]],'ICl₄⁻':['I','Cl Cl Cl Cl',-1,[[1,1,1,1]]],'IF₅':['I','F F F F F',0,[[1,1,1,1,1]]],'I₃⁻':['I','I I',-1,[[1,1]]],'CS₂':['C','S S',0,[[2,2]]]};
+const mkD=(f,c,o,q,orders,val)=>{const O=o.split(' '),T=(val==null?LV[c]:val)+O.reduce((a,x)=>a+LV[x],0)-q,acc=orders.map(b=>{const l=b.map((n,i)=>O[i]==='H'?0:4-n);return {b,l,c:(T-2*b.reduce((x,y)=>x+y,0)-2*l.reduce((x,y)=>x+y,0))/2}});return {f,c,O,q,T,acc}};
+const lwP=d=>({kind:'lewis',label:'',d,st:{b:d.O.map(()=>1),l:d.O.map(()=>0),c:0}});
+const lwPic=d=>{const a=d.acc[0];return `<div class="bl-solpic"><b>${d.f}</b>${moleculeSvg({f:d.f,center:d.c,outer:d.O,orders:a.b,lp:[a.c,...a.l],charge:d.q})}</div>`};
+const lwHelp='Tap a <b>bond</b> to switch single, double, or triple. Tap an <b>atom</b> to add a lone pair.';
+const fictOrig=G.x3fictional,tableOrig=G.x3vseprtable;let drawMock=false;
+G.x3fictional=function(){const q=fictOrig();if(!drawMock)return q;const m=q.prompt.match(/new element, <b>([^<]+)<\/b>.*Lewis structure of <b>([^<]+)<\/b> on paper and answer:/),X=m[1],f=m[2],k=+[...f.slice(X.length+1)].map(c=>SUB.indexOf(c)).join(''),val=q.parts[0].ans-7*k,d=mkD(f,X,Array(k).fill('F').join(' '),0,[Array(k).fill(1)],val);q.prompt=q.prompt.replace(' on paper and answer:',`. ${lwHelp} Then answer:`);q.parts[0]=lwP(d);q.sol=q.sol.replace('</ol>',`<li>One valid structure:${lwPic(d)}</li></ol>`);return q};
+G.x3vseprtable=function(){const q=tableOrig();if(!drawMock)return q;const names=['Steric number','Electron geometry','Molecular shape','Hybridization'],ds=[];q.groups=q.table.rows.map(r=>{const f=r[0].html.replace(/<[^>]+>/g,''),v=VD[f],d=mkD(f,v[0],v[1],v[2],v[3]);ds.push(d);const parts=r.slice(1);parts.forEach((p,i)=>{p.label=names[i]});const lw=lwP(d),a=d.acc[0];if(a.c===0&&a.b.every(x=>x===1)&&a.l.every(x=>x===0))lw.sib=parts;return {title:f,parts:[lw,...parts]}});delete q.table;q.parts=q.groups.flatMap(g=>g.parts);q.prompt=`Draw each structure on screen, then complete its card. ${lwHelp}`;q.sol=q.sol.replace('</ol>',`<li>Valid structures:<div class="bl-solgrid">${ds.map(lwPic).join('')}</div></li></ol>`);return q};
+const anPrev=answered;answered=p=>p.kind==='lewis'&&p.sib?anPrev(p)||p.sib.some(anPrev):anPrev(p);
+document.addEventListener('touchstart',e=>{const t=e.target;if(t.closest&&t.closest('.lw [data-a],.lw [data-b],.blab [data-ao-side],.blab [data-orbital]'))t.addEventListener('touchend',ev=>{if(ev.cancelable)ev.preventDefault()},{once:true,passive:false})},{passive:true});
+const bmPrev=buildMock;buildMock=function(){drawMock=true;try{return bmPrev.apply(this,arguments)}finally{drawMock=false}};
+if(state.mock&&!state.mock.graded&&!state.mock.qs.some(q=>q.allParts&&q.allParts.some(answered))&&state.mock.qs.some(q=>q.type==='x3fictional'&&!(q.allParts||q.parts).some(p=>p.kind==='lewis'))){const x=state.mock.exam;buildMock();state.mock.exam=x==null?state.exam:x}
+window.BondLab={MOLS,MOS,VD,mkD};
 })();
