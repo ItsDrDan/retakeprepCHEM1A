@@ -1,0 +1,38 @@
+/* Guided VSEPR, hybridization and MO labs, adapted from Bridge to 1B */
+.blab,.blab *{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.bl-prog{font-size:.95rem;margin-bottom:8px}
+.bl-prog b{color:#33408f;margin-right:6px}
+.bl-bar{display:block;height:7px;margin-top:6px;border-radius:7px;background:#e7ebf6;overflow:hidden}
+.bl-bar i{display:block;height:100%;background:#4a58c9}
+.bl-mol{max-width:300px;margin:4px auto 6px;text-align:center}
+.bl-mol svg{display:block;width:100%;height:auto}
+.bl-mol small{color:var(--muted)}
+.bl-p{margin:8px 0}
+.bl-over{max-width:280px;margin:6px auto}
+.bl-over svg{display:block;width:100%;height:auto}
+.bl-bench{margin:8px 0}
+.mo-diagram-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e3e7f3;border-radius:10px;background:#fff}
+.three-column-mo{display:block;width:100%;min-width:660px;height:auto;font-family:"Segoe UI",Arial,sans-serif;-webkit-user-select:none;user-select:none}
+.three-column-mo [role=button]{cursor:pointer;outline:none}
+.three-column-mo [role=button]:focus-visible rect{stroke:#213752;stroke-width:4}
+.mo-key{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:6px;font-size:.82rem;font-weight:700}
+.left-key{color:#346cc3}.right-key{color:#bf5266}.extra-key{color:#7960ae}
+.bl-bench .small{font-size:.8rem;color:var(--muted);margin:6px 0 0}
+@media(max-width:700px){.bl-bench .mo-key::before{content:"Swipe the diagram sideways to see both atoms.";flex:1 1 100%;font-weight:600;color:var(--muted)}}
+.bl-fields{display:grid;gap:10px;margin:10px 0}
+.bl-f{display:block;border:0;margin:0;padding:0;min-width:0}
+.bl-f>span,.bl-f legend{display:block;padding:0;margin-bottom:4px;font-weight:800}
+.bl-f input{width:100%;max-width:220px;min-height:44px;box-sizing:border-box;padding:8px 12px;border:2px solid #d5daea;border-radius:10px;font:inherit;font-size:16px;background:#fff}
+.bl-f input.right{border-color:#23805a;background:#f0faf5}
+.bl-f input.wrong{border-color:#c23b3b;background:#fff5f5}
+.bl-chips{display:flex;flex-wrap:wrap;gap:7px}
+.bl-chip{min-height:44px;padding:7px 13px;border:2px solid #d5daea;border-radius:10px;background:#fff;color:var(--ink,#26324a);font:inherit;font-weight:700;cursor:pointer}
+.bl-chip[aria-pressed=true]{border-color:#4a58c9;background:#e9ecff;color:#2c368c}
+.bl-fb:empty{display:none}
+.bl-fb{margin:8px 0;padding:9px 12px;border-radius:10px}
+.bl-fb ul{margin:5px 0 0;padding-left:20px}
+.bl-fb.good{background:#ecf8f2;color:#17603f}
+.bl-fb.bad{background:#fdeeee;color:#8f2525}
+.bl-fb.info{background:#f0f3fb;color:#3a4563}
+.bl-go{min-height:44px}
+.bl-done{margin-top:8px;padding:10px 12px;border-radius:10px;background:#ecf8f2;color:#17603f}
